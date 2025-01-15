@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mandelbrot</title>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <h1>Mandelbrot</h1>
+    <svg id="mandelbrotChart"></svg>
+  </body>
+  <script>
+    // Set dimensions
+    const width = 600;
+    const height = 600;
+
+    // Create SVG container
+    const svg = d3
+      .select("#mandelbrotChart")
+      .attr("width", width)
+      .attr("height", height);
+
+    // Define the Mandelbrot parameters
+    const maxIter = 10;
+    const zoom = 1;
+    const panX = 0;
+    const panY = 0;
+
+    // Define the color scale
+    const color = d3.scaleSequential(d3.interpolateTurbo).domain([0, maxIter]);
+
+    // Function to compute the Mandelbrot set
+    function mandelbrot(x, y) {
+      let zx = 0,
+        zy = 0,
+        cx = x,
+        cy = y;
+      let iter = 0;
+      while (zx * zx + zy * zy <= 4 && iter < maxIter) {
+        const tmp = zx * zx - zy * zy + cx;
+        zy = 2 * zx * zy + cy;
+        zx = tmp;
+        iter++;
+      }
+      return iter;
+    }
+
+    // Render the Mandelbrot set
+    function renderMandelbrot() {
+      console.log(console.log("rendeirng..."));
+      const imageData = [];
+      for (let px = 0; px < width; px++) {
+        for (let py = 0; py < height; py++) {
+          // Convert pixel to complex plane
+          const x = (px - width / 2) / (0.5 * zoom * width) + panX;
+          const y = (py - height / 2) / (0.5 * zoom * height) + panY;
+          const iter = mandelbrot(x, y);
+          imageData.push({ px, py, iter });
+        }
+      }
+
+      // Bind data and create rectangles
+      svg
+        .selectAll("rect")
+        .data(imageData)
+        .enter()
+        .append("rect")
+        .attr("x", (d) => d.px)
+        .attr("y", (d) => d.py)
+        .attr("width", 1)
+        .attr("height", 1)
+        .attr("fill", (d) => (d.iter === maxIter ? "#000" : color(d.iter)));
+
+      console.log(console.log("finshing rendering..."));
+    }
+
+    // Initial render
+    renderMandelbrot();
+
+    // Add zoom and pan interactivity
+    svg.call(
+      d3
+        .zoom()
+        .scaleExtent([0.5, 10])
+        .on("zoom", (event) => {
+          svg.attr("transform", event.transform);
+          // Update zoom and pan parameters if re-rendering is implemented
+        })
+    );
+  </script>
+</html>

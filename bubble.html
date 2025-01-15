@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bubble Pop Game with D3.js</title>
+    <!-- D3.js CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+      }
+      header {
+        background-color: #4caf50;
+        color: white;
+        text-align: center;
+        padding: 15px 0;
+        font-size: 1.5em;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 80px auto 20px auto; /* Adjusted for fixed header */
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .controls button {
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.3s;
+      }
+      .controls button:hover {
+        background-color: #45a049;
+      }
+      .controls button:disabled {
+        background-color: #a5d6a7;
+        cursor: not-allowed;
+      }
+      #score {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+        color: #333;
+      }
+      #visualization {
+        width: 800px;
+        height: 500px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #ffffff;
+        position: relative;
+      }
+      /* Tooltip Styling */
+      .tooltip {
+        position: absolute;
+        text-align: center;
+        padding: 5px;
+        font-size: 12px;
+        background: lightsteelblue;
+        border: 1px solid #fff;
+        border-radius: 5px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Bubble Pop Game with D3.js</header>
+
+    <div class="container">
+      <!-- Score Display -->
+      <div id="score">Score: 0</div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button id="start-button">Start Game</button>
+        <button id="reset-button" disabled>Reset Game</button>
+      </div>
+
+      <!-- Visualization Area -->
+      <div id="visualization"></div>
+
+      <!-- Tooltip -->
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+      // -----------------------------
+      // 1. Initialize SVG and Variables
+      // -----------------------------
+
+      // Select the visualization div and append an SVG element
+      const svg = d3
+        .select("#visualization")
+        .append("svg")
+        .attr("width", 800) // Width of the SVG
+        .attr("height", 500) // Height of the SVG
+        .style("background-color", "#f0f8ff"); // Light background color for better visibility
+
+      // Game variables
+      let bubbles = []; // Array to store bubble data
+      let score = 0; // Player score
+      let gameTimer = null; // D3 timer for the game loop
+      let gameActive = false; // Flag to indicate if the game is active
+
+      // Tooltip
+      const tooltip = d3.select("#tooltip");
+
+      // -----------------------------
+      // 2. Define Functions
+      // -----------------------------
+
+      // Function to create a new bubble with random attributes
+      function createBubble() {
+        const newBubble = {
+          id: Date.now() + Math.random(), // Unique identifier
+          x: Math.random() * 750 + 25, // Random x position within SVG width (avoiding edges)
+          y: 480, // Start near the bottom of the SVG
+          radius: Math.random() * 20 + 10, // Radius between 10 and 30
+          color: d3.schemeCategory10[Math.floor(Math.random() * 10)], // Random color from D3's category scheme
+          speed: Math.random() * 2 + 1, // Speed between 1 and 3 pixels per frame
+        };
+        bubbles.push(newBubble);
+        renderBubbles();
+      }
+
+      // Function to render bubbles on the SVG canvas
+      function renderBubbles() {
+        // Data binding
+        const circles = svg.selectAll("circle").data(bubbles, (d) => d.id);
+
+        // Enter selection: create new circles for new bubbles
+        circles
+          .enter()
+          .append("circle")
+          .attr("cx", (d) => d.x)
+          .attr("cy", (d) => d.y)
+          .attr("r", 0) // Start with radius 0 for a pop-in effect
+          .attr("fill", (d) => d.color)
+          .attr("opacity", 0.8)
+          .on("click", popBubble) // Attach click event to pop bubbles
+          .transition()
+          .duration(500) // Pop-in duration
+          .attr("r", (d) => d.radius)
+          .attr("opacity", 0.8);
+
+        // Update selection: update existing circles
+        circles
+          .transition()
+          .duration(500)
+          .attr("cx", (d) => d.x)
+          .attr("cy", (d) => d.y)
+          .attr("r", (d) => d.radius)
+          .attr("fill", (d) => d.color)
+          .attr("opacity", 0.8);
+
+        // Exit selection: remove circles for bubbles that have been popped or missed
+        circles
+          .exit()
+          .transition()
+          .duration(500)
+          .attr("r", 0) // Shrink to radius 0 for a pop-out effect
+          .attr("opacity", 0)
+          .remove();
+      }
+
+      // Function to handle popping a bubble
+      function popBubble(event, d) {
+        if (!gameActive) return; // Prevent popping when the game isn't active
+
+        // Increase score based on bubble size
+        score += Math.floor(d.radius);
+        d3.select("#score").text(`Score: ${score}`);
+
+        // Remove the popped bubble from the array
+        bubbles = bubbles.filter((b) => b.id !== d.id);
+        renderBubbles();
+      }
+
+      // Function to animate bubbles moving upwards
+      function animateBubbles() {
+        bubbles.forEach((bubble, index) => {
+          bubble.y -= bubble.speed; // Move bubble upwards
+
+          // If bubble moves off the top of the SVG, remove it and decrease score
+          if (bubble.y + bubble.radius < 0) {
+            bubbles.splice(index, 1);
+            renderBubbles();
+          }
+        });
+
+        // Update positions of all bubbles
+        svg.selectAll("circle").attr("cy", (d) => d.y);
+
+        // Randomly create new bubbles
+        if (Math.random() < 0.02) {
+          // Approximately 2% chance each frame
+          createBubble();
+        }
+      }
+
+      // Function to start the game
+      function startGame() {
+        if (gameActive) return; // Prevent multiple game loops
+
+        // Reset game variables
+        score = 0;
+        d3.select("#score").text(`Score: ${score}`);
+        bubbles = [];
+        renderBubbles();
+
+        // Start the game loop
+        gameTimer = d3.timer(function (elapsed) {
+          animateBubbles();
+        });
+
+        gameActive = true;
+        d3.select("#start-button").attr("disabled", true);
+        d3.select("#reset-button").attr("disabled", false);
+      }
+
+      // Function to reset the game
+      function resetGame() {
+        if (!gameActive) return;
+
+        // Stop the game loop
+        if (gameTimer) gameTimer.stop();
+
+        // Reset game variables
+        score = 0;
+        d3.select("#score").text(`Score: ${score}`);
+        bubbles = [];
+        renderBubbles();
+
+        gameActive = false;
+        d3.select("#start-button").attr("disabled", false);
+        d3.select("#reset-button").attr("disabled", true);
+      }
+
+      // Function to show tooltip
+      function showTooltip(event, d) {
+        tooltip
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 28 + "px")
+          .transition()
+          .duration(200)
+          .style("opacity", 0.9);
+        tooltip.html(`Score: ${Math.floor(d.radius)}`);
+      }
+
+      // Function to hide tooltip
+      function hideTooltip(event, d) {
+        tooltip.transition().duration(500).style("opacity", 0);
+      }
+
+      // Attach tooltip events
+      svg
+        .selectAll("circle")
+        .on("mouseover", showTooltip)
+        .on("mouseout", hideTooltip);
+
+      // -----------------------------
+      // 3. Attach Event Listeners
+      // -----------------------------
+
+      // Start Game Button
+      d3.select("#start-button").on("click", startGame);
+
+      // Reset Game Button
+      d3.select("#reset-button").on("click", resetGame);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guided Demo 2 (Advanced) - Interactive Line Charts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Chart.js and Zoom Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+
+    <style></style>
+  </head>
+  <body>
+    <div class="chart-wrapper">
+      <canvas id="advancedLineChart"></canvas>
+    </div>
+
+    <script>
+      const ctx = document.getElementById("advancedLineChart").getContext("2d");
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, "rgba(75,192,192,0.4)");
+      gradient.addColorStop(1, "rgba(75,192,192,0)");
+
+      const data = {
+        labels: ["x=0", "x=1", "x=2", "x=3", "x=4"],
+        datasets: [
+          {
+            label: "Cubic Data",
+            data: [0, 1, 8, 27, 64],
+            borderColor: "#4BC0C0",
+            backgroundColor: gradient,
+            fill: true,
+            cubicInterpolationMode: "monotone",
+          },
+        ],
+      };
+
+      const options = {
+        responsive: true,
+        plugins: {
+          zoom: {
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: "xy",
+            },
+            pan: {
+              enabled: true,
+              mode: "xy",
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      };
+
+      const chart = new Chart(ctx, {
+        type: "line",
+        data: data,
+        options: options,
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basic Bar Chart Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <canvas id="barChart"></canvas>
+  </body>
+  <script>
+    const ctx = document.getElementById("barChart").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: [
+          "Garden of Eden",
+          "Sin Times",
+          "Renaissance",
+          "Industrial Revolution",
+          "Endtimes",
+        ],
+        datasets: [
+          {
+            label: "Sales",
+            data: [1000, 900, 800, 700, 600],
+            backgroundColor: "#4bc0c0",
+          },
+          {
+            label: "",
+            data: [650, 100, 200, 742, 513],
+            backgroundColor: "#9966ff",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        animation: {
+          duration: 1000,
+          easing: "easeInOutQuad",
+        },
+      },
+    });
+  </script>
+</html>
